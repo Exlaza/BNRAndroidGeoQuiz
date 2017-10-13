@@ -23,16 +23,25 @@ public class QuizActivity extends AppCompatActivity {
             new Question(R.string.question_americas, false),
             new Question(R.string.question_africa, false)
     };
+    private boolean[] mQuestionAnswers = new boolean[mQuestionBank.length];
     private int mCurrentIndex = 0;
     private static final String TAG = "QuizActivity";
     private static final String KEY_INDEX = "index";
+    private static final String QUESTIONS_ANSWERED_KEY = "answer_index";
 
     private void updateQuestion() {
+        //This is working only because THe boolean array defaults to false
+        mTrueButton.setEnabled(!mQuestionAnswers[mCurrentIndex]);
+        mFalseButton.setEnabled(!mQuestionAnswers[mCurrentIndex]);
         int question = mQuestionBank[mCurrentIndex].getTextResId();
         mQuestionTextView.setText(question);
     }
 
     private void checkAnswer(boolean userPressedTrue){
+        mQuestionAnswers[mCurrentIndex] = true;
+        mTrueButton.setEnabled(false);
+        mFalseButton.setEnabled(false);
+
         boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
         int messageResId = 0;
         if (answerIsTrue == userPressedTrue){
@@ -79,6 +88,7 @@ public class QuizActivity extends AppCompatActivity {
         super.onSaveInstanceState(savedInstanceState);
         Log.i(TAG, "onSaveInstanceState");
         savedInstanceState.putInt(KEY_INDEX, mCurrentIndex);
+        savedInstanceState.putBooleanArray(QUESTIONS_ANSWERED_KEY, mQuestionAnswers);
     }
 
     @Override
@@ -86,19 +96,22 @@ public class QuizActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate() called");
         setContentView(R.layout.activity_quiz);
-        if (savedInstanceState!=null){
+        Log.d(TAG, "after setcontent view");
+        if (savedInstanceState!=null) {
+            Log.d(TAG, "savedInstanceState!=null");
             mCurrentIndex = savedInstanceState.getInt(KEY_INDEX, 0);
+            Log.i(TAG, "Mexecution of mCurrentIndex");
+            mQuestionAnswers = savedInstanceState.getBooleanArray(QUESTIONS_ANSWERED_KEY);
         }
-
         mQuestionTextView = (TextView)findViewById(R.id.question_text_view);
         mQuestionTextView.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
                 mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length;
-                updateQuestion();
+
             }
         });
-        updateQuestion();
+
         mTrueButton = (Button)findViewById(R.id.true_button);
         mTrueButton.setOnClickListener(new View.OnClickListener(){
             public void onClick(View v){
@@ -120,7 +133,9 @@ public class QuizActivity extends AppCompatActivity {
                 updateQuestion();
             }
 
+
         });
+        updateQuestion();
 
         mPreviousButton = (ImageButton)findViewById(R.id.previous_button);
         mPreviousButton.setOnClickListener(new View.OnClickListener(){
