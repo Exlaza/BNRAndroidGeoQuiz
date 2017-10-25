@@ -1,5 +1,7 @@
 package com.bignerdranch.android.geoquiz;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -17,6 +19,9 @@ public class QuizActivity extends AppCompatActivity {
     private Button mTrueButton;
     private ImageButton mNextButton;
     private ImageButton mPreviousButton;
+    private Button mCheatButton;
+    private boolean mIsCheater;
+
     private Question[] mQuestionBank = new Question[]{
             new Question(R.string.question_oceans, true),
             new Question(R.string.question_mideast, true),
@@ -28,6 +33,7 @@ public class QuizActivity extends AppCompatActivity {
     private static final String TAG = "QuizActivity";
     private static final String KEY_INDEX = "index";
     private static final String QUESTIONS_ANSWERED_KEY = "answer_index";
+    private static final int REQUEST_CODE_CHEAT = 0;
 
     private void updateQuestion() {
         //This is working only because THe boolean array defaults to false
@@ -37,19 +43,27 @@ public class QuizActivity extends AppCompatActivity {
         mQuestionTextView.setText(question);
     }
 
-    private void checkAnswer(boolean userPressedTrue){
+
+
+    private void checkAnswer(boolean userPressedTrue) {
+        Log.d(TAG, "Inside the method checkAnswer()");
         mQuestionAnswers[mCurrentIndex] = true;
         mTrueButton.setEnabled(false);
         mFalseButton.setEnabled(false);
-
+        Log.d(TAG, "Just after mfalseButton.setEnabled");
         boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
         int messageResId = 0;
-        if (answerIsTrue == userPressedTrue){
-            messageResId = R.string.correct_toast;
+        Log.d(TAG, "Just before checking for mIsCheater");
+        if (mIsCheater) {
+            messageResId = R.string.judgment_toast;
+        } else {
+            if (answerIsTrue == userPressedTrue) {
+                messageResId = R.string.correct_toast;
+            } else {
+                messageResId = R.string.incorrect_toast;
+            }
         }
-        else{
-            messageResId = R.string.incorrect_toast;
-        }
+
         Toast.makeText(QuizActivity.this, messageResId, Toast.LENGTH_SHORT).show();
     }
 
@@ -92,6 +106,20 @@ public class QuizActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data){
+        Log.d(TAG, "THis should return the value of intent back from CheatActivity");
+        if (resultCode != Activity.RESULT_OK){
+            return ;
+        }
+        if (requestCode == REQUEST_CODE_CHEAT){
+            if (data==null){
+                return;
+            }
+            mIsCheater = CheatActivity.wasAnswerShown(data);
+        }
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate() called");
@@ -130,12 +158,25 @@ public class QuizActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length;
+                mIsCheater = false;
                 updateQuestion();
             }
 
 
         });
         updateQuestion();
+
+        mCheatButton = (Button)findViewById(R.id.cheat_button);
+        mCheatButton.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                //Do something on clicking cheatButton
+                // Intent intent = new Intent(QuizActivity.this, CheatActivity.class);
+                boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
+                Intent intent = CheatActivity.newIntent(QuizActivity.this, answerIsTrue);
+                startActivityForResult(intent, REQUEST_CODE_CHEAT);
+            }
+        });
 
         mPreviousButton = (ImageButton)findViewById(R.id.previous_button);
         mPreviousButton.setOnClickListener(new View.OnClickListener(){
